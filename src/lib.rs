@@ -8,6 +8,6 @@ pub struct WabbaRust {
 impl WabbaRust {
 	pub fn init() -> anyhow::Result<()> {
 		log::init(true);
-		Ok(())
+		return Ok(());
 	}
 }

@@ -6,20 +6,19 @@ use anyhow::anyhow;
 use reqwest::Client;
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
 use futures_util::StreamExt;
+use serde_json::Value;
 use terminal_size::{Width, Height, terminal_size};
 
 pub async fn download_file(client: &Client, path: &str) -> anyhow::Result<()> {
 	let download_url = get_download_url().await?;
 
+	println!("Download URL: {}", download_url);
 	let res = client
 		.get(&download_url)
 		.header("apikey", "Aeby8A0QzwcCnVrkMXjqf3Id38TRmVrnB9YDI9o9kAx4--Izy5qNKLuv2xBfl3--ZbD0azECEsornaIWSYxZgA==")
 		.send()
 		.await
 		.or(Err(anyhow!("Failed to GET from `{}`", &download_url)))?;
-
-	let term_width = terminal_size().unwrap().0.0;
-	let max_text_len = term_width - (3 + 2);
 
 	let total_size = res.content_length().ok_or(anyhow!("Failed to get content length from `{}`.", download_url))?;
 	let progress_bar_message = String::from("Unofficial Skyrim Special Edition Patch-266-4-3-0a-1702019266.7z");
@@ -50,11 +49,34 @@ pub async fn download_file(client: &Client, path: &str) -> anyhow::Result<()> {
 }
 
 async fn get_download_url() -> anyhow::Result<String> {
-	let _res = reqwest::Client::new()
-		.get("https://api.nexusmods.com/api/v1/games/skyrimspecialedition/mods/266/files/449719/download_link.json")
+	let client = reqwest::Client::new();
+	let mod_files = client
+		.get(format!("https://api.nexusmods.com/v1/games/{}/mods/{}/files.json", "skyrimspecialedition", 266))
 		.header("apikey", "Aeby8A0QzwcCnVrkMXjqf3Id38TRmVrnB9YDI9o9kAx4--Izy5qNKLuv2xBfl3--ZbD0azECEsornaIWSYxZgA==")
-		.send()
-		.await?;
-		
-		return Ok(format!("https://cf-files.nexusmods.com/cdn/1704/266/Unofficial Skyrim Special Edition Patch-266-4-3-0a-1702019266.7z?md5=p9GMH2_Zu8cmds9k7FkEhg&expires=1705671703&user_id=152419148"));
+		.send().await?
+		.text().await?;
+
+	let mod_files: Value = serde_json::from_str(&mod_files)?;
+	let mut file_id = String::new();
+
+	if let Some(files) = mod_files["files"].as_array() {
+		for file in files {
+			if file["version"] == "4.3.0a" {
+				file_id = file["file_id"].to_string();
+			}
+		}
+	};
+	
+	let download_url = client
+		.get(format!("https://api.nexusmods.com/v1/games/{}/mods/{}/files/{}/download_link.json", "skyrimspecialedition", 266, file_id))
+		.header("apikey", "Aeby8A0QzwcCnVrkMXjqf3Id38TRmVrnB9YDI9o9kAx4--Izy5qNKLuv2xBfl3--ZbD0azECEsornaIWSYxZgA==")
+		.send().await?
+		.text().await?;
+
+	// TODO: Check other error codes return in JSON response
+
+	let download_url: Value = serde_json::from_str(&download_url)?;
+	let download_url = &download_url[0]["URI"];
+
+	return Ok(download_url[0].to_string());
 }
