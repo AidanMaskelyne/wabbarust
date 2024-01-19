@@ -28,7 +28,7 @@ pub async fn download_file(client: &Client, path: &str) -> anyhow::Result<()> {
 	progress_bar.set_style(ProgressStyle::default_bar()
 		//.template("{msg}\n[{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({bytes_per_sec}, {eta})")?
 		.template("{msg:>5} [{bar:50}] {percent_custom}")?
-		.with_key("percent_custom", |state: &ProgressState, w: &mut dyn Write| write!(w, "hello").unwrap())
+		.with_key("percent_custom", |state: &ProgressState, w: &mut dyn std::fmt::Write| write!(w, "hello").unwrap())
 		.progress_chars("#-"));
 	progress_bar.set_message(progress_bar_message);
 
