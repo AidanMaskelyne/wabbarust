@@ -1,8 +1,4 @@
-use std::{
-	io,
-	fs,
-	path::PathBuf,
-};
+use std::path::PathBuf;
 
 use wabbarust::WabbaRust;
 use wabbarust::download::nexus::NexusDownload;
@@ -17,6 +13,7 @@ async fn main() -> anyhow::Result<()> {
 		String::from("Unofficial Skyrim Special Edition Patch-266-4-3-0a-1702019266.7z"),
 		String::from("4.3.0a"),
 		String::from("266"),
+		String::from("skyrimspecialedition"),
 		String::from("c75d8dd9478fb7fc685507c01313f36db909965c409082f23a14c2031d36ba6a")
 	);
 

@@ -4,6 +4,7 @@ use anyhow::anyhow;
 use log::debug;
 
 pub mod download;
+pub mod manifest;
 
 pub struct WabbaRust {
 	api_key: String,
