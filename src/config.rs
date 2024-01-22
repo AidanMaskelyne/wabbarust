@@ -1,9 +1,10 @@
 use std::{
 	path::PathBuf,
 	fs::OpenOptions,
-	io::Write
+	io::{Write, stdout, stdin},
 };
 
+use anyhow::Context;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
@@ -36,7 +37,8 @@ impl WabbaRustConfig {
 		}
 
 		if !config_file.exists() {
-			std::fs::File::create_new(config_file.clone())?;
+			let mut f = std::fs::File::create(config_file.clone())?;
+			f.write_all(b"[config]")?;
 		}
 
 		let config = std::fs::read_to_string(config_file.clone())?;
@@ -78,5 +80,16 @@ impl WabbaRustConfig {
 			.open(self.get_config_file()).unwrap();
 
 		file.write_all(toml.as_bytes()).unwrap();
+	}
+
+	pub fn prompt_for_api_key(&mut self) -> anyhow::Result<()> {
+		let mut input = String::new();
+		print!("Please enter an API key: ");
+		stdout().flush()?;
+		stdin().read_line(&mut input).context("Failed to read stdin")?;
+		let input = input.trim().to_string();
+		self.set_option(String::from("api_key"), input);
+
+		return Ok(());
 	}
 }

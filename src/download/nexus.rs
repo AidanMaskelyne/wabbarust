@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Write;
 
 use anyhow::anyhow;
+use colored::Colorize;
 use log::debug;
 use reqwest::Client;
 use indicatif::{ProgressBar, ProgressState, ProgressStyle};
@@ -114,12 +115,9 @@ impl NexusDownload {
 		}
 
 		progress_bar.finish_with_message(format!("{}", self.get_file_name()));
-
 		debug!("Completed download of `{}`", self.get_file_name());
-		debug!("Checking hash of `{}`", self.get_file_name());
-		println!("Hashing `{}`...", self.get_file_name());
+
 		self.check_hash(&file)?;
-		debug!("File `{}` hashed successfully", self.get_file_name());
 
 		return Ok(());
 	}
@@ -163,11 +161,18 @@ impl NexusDownload {
 	}
 
 	fn check_hash(&self, file: &PathBuf) -> anyhow::Result<()> {
+		debug!("Checking hash of `{}`", self.get_file_name());
+		print!("  {} Hashing `{}`...", "↳".blue(), self.get_file_name());
+		std::io::stdout().flush()?;
 		let hash = sha256::try_digest(file)?;
 
 		if hash != self.get_hash() {
+			println!(" {}", "FAILED".red());
 			return Err(anyhow!("downloaded file's hash doesn't match one on record"));
 		}
+
+		println!(" {}", "Done".green());
+		debug!("File `{}` hashed successfully", self.get_file_name());
 
 		return Ok(());
 	}
