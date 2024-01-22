@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use download::Download;
 use reqwest::Client;
-use serde::Deserialize;
 
 use anyhow::anyhow;
 use log::debug;

@@ -1,6 +1,6 @@
 use std::cmp::min;
 use std::fs::File;
-use std::io::{stdin, stdout, Write};
+use std::io::{stdout, Write};
 use std::path::PathBuf;
 
 use anyhow::anyhow;
@@ -10,15 +10,15 @@ use reqwest::Client;
 use indicatif::{ProgressBar, ProgressState, ProgressStyle, HumanBytes};
 use futures_util::StreamExt;
 use serde::{Serialize, Deserialize};
-use serde_json::{Value, Number};
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct NexusModFiles {
-	files: Vec<NexusModFile>,
+pub struct NexusModsFiles {
+	files: Vec<NexusModsFile>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct NexusModFile {
+pub struct NexusModsFile {
 	id: Vec<i32>,
 	file_id: i32,
 	name: String,
@@ -27,7 +27,8 @@ pub struct NexusModFile {
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct NexusModDownloadResponse {
+#[allow(non_snake_case)] // The field in the JSON response is "URI" and serde is case-sensitive
+pub struct NexusModsDownloadResponse {
 	name: String,
 	short_name: String,
 	URI: String,
@@ -73,7 +74,7 @@ impl Download {
 	pub async fn download(&self, client: &Client, download_dir: PathBuf, api_key: String) -> anyhow::Result<()> {
 		let file_name = self.get_file_name();
 		let output_file: PathBuf = [download_dir.clone(), PathBuf::from(self.get_file_name())].iter().collect();
-		let download_url = self.get_download_url(&client, &download_dir, &api_key).await?;
+		let download_url = self.get_download_url(&client, &api_key).await?;
 
 		let res = match self.get_dl_type().unwrap() {
 			DownloadType::Nexus => {
@@ -92,7 +93,6 @@ impl Download {
 		};
 
 		let total_size = res.content_length().ok_or(anyhow!("Failed to get content length from `{}`", &download_url))?;
-		let progress_bar_message = self.get_file_name();
 
 		let progress_bar = ProgressBar::new(total_size);
 		progress_bar.set_style(ProgressStyle::default_bar()
@@ -207,15 +207,15 @@ impl Download {
 		return self.game.clone();
 	}
 
-	pub async fn get_download_url(&self, client: &Client, download_dir: &PathBuf, api_key: &String) -> anyhow::Result<String> {
+	pub async fn get_download_url(&self, client: &Client, api_key: &String) -> anyhow::Result<String> {
 		return match self.dl_type.as_str() {
 			"direct" => Ok(self.url.clone().unwrap()),
-			"nexus" => Ok(self.get_nexus_download_url(client, download_dir, api_key).await?),
+			"nexus" => Ok(self.get_nexus_download_url(client, api_key).await?),
 			_ => Err(anyhow!("Can't get download URL of invalid download type"))
 		};
 	}
 
-	pub async fn get_nexus_download_url(&self, client: &Client, download_dir: &PathBuf, api_key: &String) -> anyhow::Result<String> {
+	pub async fn get_nexus_download_url(&self, client: &Client, api_key: &String) -> anyhow::Result<String> {
 		let mod_files = client
 			.get(format!("https://api.nexusmods.com/v1/games/{}/mods/{}/files.json", self.get_game().unwrap(), self.get_mod_id().unwrap()))
 			.header("apikey", api_key.clone())
@@ -234,7 +234,7 @@ impl Download {
 			}
 		}
 
-		let mod_files: NexusModFiles = serde_json::from_str(&mod_files)?;
+		let mod_files: NexusModsFiles = serde_json::from_str(&mod_files)?;
 		let mut file_id = String::new();
 
 		for file in &mod_files.files {
@@ -261,7 +261,7 @@ impl Download {
 			}
 		}
 
-		let download_urls: Vec<NexusModDownloadResponse> = serde_json::from_str(&download_urls)?;
+		let download_urls: Vec<NexusModsDownloadResponse> = serde_json::from_str(&download_urls)?;
 		let download_url = &download_urls[0].URI; // The download location at index 0 is the user's preference
 
 		return Ok(String::from(download_url));
