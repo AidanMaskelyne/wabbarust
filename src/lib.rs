@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use log::debug;
 
+pub mod args;
+pub mod config;
 pub mod download;
 pub mod manifest;
 
@@ -10,16 +12,18 @@ pub struct WabbaRust {
 	api_key: String,
 	install_dir: PathBuf,
 	download_dir: PathBuf,
+	debug: bool,
 }
 
 impl WabbaRust {
-	pub fn new(api_key: String, install_dir: PathBuf, download_dir: Option<PathBuf>) -> WabbaRust {
+	pub fn new(api_key: String, install_dir: PathBuf, download_dir: Option<PathBuf>, debug: bool) -> WabbaRust {
 		let download_dir: PathBuf = download_dir.unwrap_or([install_dir.clone(), PathBuf::from("downloads")].iter().collect());
 
 		return WabbaRust {
 			api_key,
 			install_dir,
 			download_dir,
+			debug,
 		};
 	}
 
@@ -43,7 +47,10 @@ impl WabbaRust {
 	}
 
 	fn init_logger(&self) -> anyhow::Result<()> {
-		std::env::set_var("RUST_LOG", "trace");
+		if self.debug {
+			std::env::set_var("RUST_LOG", "debug");
+		}
+
 		env_logger::try_init()?;
 
 		return Ok(());
