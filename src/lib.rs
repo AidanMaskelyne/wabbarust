@@ -1,19 +1,20 @@
 use std::path::PathBuf;
-use download::Download;
-use reqwest::Client;
 
+use reqwest::Client;
 use anyhow::anyhow;
 use log::debug;
 
+use args::Commands;
+use config::WabbaRustConfig;
+use download::Download;
+
 pub mod args;
 pub mod config;
-
-#[path ="download.rs"]
 pub mod download;
 
 #[derive(Clone)]
 pub struct WabbaRust {
-	api_key: String,
+	config: WabbaRustConfig,
 	install_dir: PathBuf,
 	download_dir: PathBuf,
 	debug: bool,
@@ -22,11 +23,11 @@ pub struct WabbaRust {
 }
 
 impl WabbaRust {
-	pub fn new(api_key: String, install_dir: PathBuf, download_dir: Option<PathBuf>, debug: bool) -> WabbaRust {
+	pub fn new(config: WabbaRustConfig, install_dir: PathBuf, download_dir: Option<PathBuf>, debug: bool) -> WabbaRust {
 		let download_dir: PathBuf = download_dir.unwrap_or([install_dir.clone(), PathBuf::from("downloads")].iter().collect());
 
 		return WabbaRust {
-			api_key,
+			config,
 			install_dir,
 			download_dir,
 			debug,
@@ -62,7 +63,7 @@ impl WabbaRust {
 	}
 
 	pub fn get_api_key(&self) -> String {
-		return self.api_key.clone();
+		return self.config.get_api_key();
 	}
 
 	pub fn get_install_dir(&self) -> PathBuf {
@@ -103,6 +104,24 @@ impl WabbaRust {
 		for download in &self.downloads {
 			download.download(&client, self.get_download_dir(), self.get_api_key()).await?;
 		}
+
+		return Ok(());
+	}
+
+	pub async fn exec_command(&mut self, command: crate::args::Commands) -> anyhow::Result<()> {
+		match command {
+			Commands::Install { modlist } => self.install_modlist(modlist).await?,
+			Commands::Config { option, value } => self.config.set_option(&option, &value),
+			Commands::Repair { modlist } => {},
+		}
+
+		return Ok(());
+	}
+
+	async fn install_modlist(&self, modlist: String) -> anyhow::Result<()> {
+		// TODO: Search ~/.config/wabbarust/manifests/ for `modlist`, or assume it's a path
+		// TODO: and then load the manifest file
+		self.start_downloading().await?;
 
 		return Ok(());
 	}

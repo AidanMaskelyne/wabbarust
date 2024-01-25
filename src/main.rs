@@ -11,15 +11,16 @@ async fn main() -> anyhow::Result<()> {
 	let wr_config = WabbaRustConfig::load()?;
 
 	let install_folder: PathBuf = [std::env::current_dir()?, PathBuf::from("install")].iter().collect();
-	let wr = WabbaRust::new(
-		wr_config.config.api_key.clone().unwrap(),
+
+	let mut wr = WabbaRust::new(
+		wr_config,
 		install_folder,
 		None,
 		args.debug
 	);
 	wr.init()?;
 
-	wr.start_downloading().await?;
+	wr.exec_command(args.command.clone()).await?;
 
 	return Ok(());
 }

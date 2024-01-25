@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 
-#[derive(Parser)]
+#[derive(Parser, Clone)]
 #[command(name = "WabbaRust")]
 #[command(author = "Aidan M. <aidan@muttleyville.org>")]
 #[command(version)]
@@ -13,12 +13,12 @@ pub struct Args {
 	pub debug: bool,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, Clone)]
 pub enum Commands {
 	/// Install a modlist
 	Install {
 		/// Either the name of an official modlist or path to a custom manifest file
-		modlist: std::path::PathBuf,
+		modlist: String,
 	},
 
 	/// Repair an installed modlist

@@ -7,7 +7,7 @@ use std::{
 use anyhow::Context;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct WabbaRustConfig {
 	#[serde(skip)]
 	config_dir: PathBuf,
@@ -18,12 +18,13 @@ pub struct WabbaRustConfig {
 	#[serde(skip)]
 	config_file: PathBuf,
 
-	pub config: Config,
+	config: Config,
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Config {
-	pub api_key: Option<String>,
+#[derive(Serialize, Deserialize, Clone)]
+struct Config {
+	api_key: Option<String>,
+	hello: Option<String>,
 }
 
 impl WabbaRustConfig {
@@ -42,6 +43,7 @@ impl WabbaRustConfig {
 		}
 
 		let config = std::fs::read_to_string(config_file.clone())?;
+		// let mut config = config.parse::<Document>()?;
 		let config: WabbaRustConfig = toml::from_str(&config)?;
 
 		return Ok(WabbaRustConfig {
@@ -64,10 +66,17 @@ impl WabbaRustConfig {
 		return self.config_file.clone();
 	}
 
-	pub fn set_option(&mut self, option: String, value: String) {
+	pub fn get_api_key(&self) -> String {
+		return self.config.api_key.clone().unwrap();
+	}
+
+	pub fn set_option(&mut self, option: &String, value: &String) {
 		match option.as_str() {
 			"api_key" => {
-				self.config.api_key = Some(value);
+				self.config.api_key = Some(value.clone());
+			}
+			"hello" => {
+				self.config.hello = Some(value.clone());
 			}
 			_ => {}
 		};
@@ -88,7 +97,7 @@ impl WabbaRustConfig {
 		stdout().flush()?;
 		stdin().read_line(&mut input).context("Failed to read stdin")?;
 		let input = input.trim().to_string();
-		self.set_option(String::from("api_key"), input);
+		self.set_option(&String::from("api_key"), &input);
 
 		return Ok(());
 	}
